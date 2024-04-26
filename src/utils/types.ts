@@ -34,6 +34,7 @@ export interface IMeta {
   videoWidth?: number;
   videoHeight?: number;
   validationError?: unknown;
+  videoUrl?: string;
 }
 
 export interface IFileWithMeta {

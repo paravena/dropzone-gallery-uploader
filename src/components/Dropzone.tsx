@@ -18,6 +18,7 @@ import {
   resolveValue,
   StatusValue,
 } from '../utils';
+import useDragState from '../hooks/useDragState.ts';
 
 export type IDropzoneProps = {
   onChangeStatus: (
@@ -58,14 +59,16 @@ const Dropzone = ({
   canRemove,
   canRestart,
 }: IDropzoneProps) => {
-  const [active, setActive] = useState<boolean>(false);
-  const [dragged, setDragged] = useState<FileInputItem[]>([]);
-  const dragTimeoutLeaveId = useRef<NodeJS.Timeout>();
   const dropzoneRef = useRef<HTMLDivElement | null>(null);
-  const reject = dragged.some(
-    file =>
-      file.type !== 'application/x-moz-file' && !accepts(file as File, accept),
-  );
+  const {
+    active,
+    dragged,
+    reject,
+    handleDragOver,
+    handleDragEnter,
+    handleDragLeave,
+  } = useDragState(accept);
+
   const [filesMap, setFilesMap] = useState<FilesMap>({});
   const updateFilesMapEntry = (id: string, value: IFileWithMeta) => {
     setFilesMap(prev => ({ ...prev, [id]: value }));
@@ -104,29 +107,11 @@ const Dropzone = ({
     updateFilesMapEntry(fileWithMeta.id, fileWithMeta);
   };
 
-  const handleDragEvent =
-    (clearTimeoutCallback?: () => void) =>
-    (event: React.DragEvent<HTMLElement>) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (clearTimeoutCallback) {
-        clearTimeoutCallback();
-      }
-      const dragged = getFilesFromEvent(event);
-      setActive(true);
-      setDragged(dragged);
-    };
-
-  const handleDragEnter = handleDragEvent();
-
-  const handleDragOver = handleDragEvent(() =>
-    clearTimeout(dragTimeoutLeaveId.current),
-  );
-
   const uploadFile = async (
     fileWithMeta: IFileWithMeta,
     params: IUploadParams,
   ) => {
+    console.log('Upload file', fileWithMeta);
     const {
       url,
       method = HttpMethod.POST,
@@ -199,15 +184,6 @@ const Dropzone = ({
     fileWithMeta.xhr = xhr;
     updateFileStatus(fileWithMeta, StatusValue.Uploading);
     handleChangeStatus(fileWithMeta);
-  };
-
-  const handleDragLeave = (event: React.DragEvent<HTMLElement>) => {
-    event.stopPropagation();
-    event.preventDefault();
-    dragTimeoutLeaveId.current = setTimeout(() => {
-      setActive(false);
-      setDragged([]);
-    }, 150);
   };
 
   const handleChangeStatus = (fileWithMeta: IFileWithMeta) => {

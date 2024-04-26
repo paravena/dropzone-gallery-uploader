@@ -34,7 +34,7 @@ const castDataToFilesArray = (
 
 export const getFilesFromEvent = (event: FileInputEvent): FileInputItem[] => {
   let items = [] as FileInputItem[];
-
+  console.log('FilesInputEvent', event);
   if ('dataTransfer' in event) {
     items = getFilesFromDragEvent(event.dataTransfer);
   } else if (event.target && event.target.files) {
@@ -121,7 +121,7 @@ export const generatePreview = async (fileWithMeta: IFileWithMeta) => {
         else fileObj.onloadedmetadata = resolve;
       }),
       new Promise((_, reject) => {
-        setTimeout(reject, 1000);
+        setTimeout(reject, 100000);
       }),
     ]);
   };
@@ -146,6 +146,7 @@ export const generatePreview = async (fileWithMeta: IFileWithMeta) => {
     if (isVideo) {
       const video = document.createElement('video');
       video.src = objectUrl;
+      fileWithMeta.meta.videoUrl = objectUrl;
       await fileCallbackToPromise(video);
       fileWithMeta.meta.duration = video.duration;
       fileWithMeta.meta.videoWidth = video.videoWidth;

@@ -31,9 +31,13 @@ const Preview = ({
     percent = 0,
     size = 0,
     previewUrl,
+    videoUrl,
     status,
     duration,
     validationError,
+    videoHeight,
+    videoWidth,
+    type,
   },
   className,
   style,
@@ -90,7 +94,14 @@ const Preview = ({
           title={title}
         />
       )}
-      {!previewUrl && <span className="text-sm text-gray-600">{title}</span>}
+      {videoUrl && (
+        <video src={videoUrl} width={videoWidth} height={videoHeight} controls>
+          <source src={videoUrl} type={type} />
+        </video>
+      )}
+      {!previewUrl && !videoUrl && (
+        <span className="text-sm text-gray-600">{title}</span>
+      )}
       <ProgressBar
         isUpload={isUpload}
         percent={percent}
