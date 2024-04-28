@@ -9,6 +9,7 @@ import {
   StatusValue,
 } from '../utils';
 import ProgressBar from './ProgressBar.tsx';
+import { XMarkIcon } from '@heroicons/react/20/solid';
 
 type Props = {
   extra: IExtra;
@@ -85,6 +86,13 @@ const Preview = ({
 
   return (
     <div className="relative">
+      <button
+        type="button"
+        className="absolute right-3 top-3 z-10 inline-flex rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+        onClick={remove}
+      >
+        <XMarkIcon className="h-6 w-6" />
+      </button>
       {previewUrl && (
         <img
           className="h-auto max-w-full rounded-lg"
