@@ -34,7 +34,6 @@ const castDataToFilesArray = (
 
 export const getFilesFromEvent = (event: FileInputEvent): FileInputItem[] => {
   let items = [] as FileInputItem[];
-  console.log('FilesInputEvent', event);
   if ('dataTransfer' in event) {
     items = getFilesFromDragEvent(event.dataTransfer);
   } else if (event.target && event.target.files) {
@@ -113,12 +112,15 @@ export const generatePreview = async (fileWithMeta: IFileWithMeta) => {
   const objectUrl = URL.createObjectURL(file);
 
   const fileCallbackToPromise = (
-    fileObj: HTMLImageElement | HTMLAudioElement,
+    fileObj: HTMLImageElement | HTMLAudioElement | HTMLVideoElement,
   ) => {
     return Promise.race([
       new Promise(resolve => {
-        if (fileObj instanceof HTMLImageElement) fileObj.onload = resolve;
-        else fileObj.onloadedmetadata = resolve;
+        if (fileObj instanceof HTMLImageElement) {
+          fileObj.onload = resolve;
+        } else {
+          fileObj.onloadedmetadata = resolve;
+        }
       }),
       new Promise((_, reject) => {
         setTimeout(reject, 100000);
@@ -152,8 +154,11 @@ export const generatePreview = async (fileWithMeta: IFileWithMeta) => {
       fileWithMeta.meta.videoWidth = video.videoWidth;
       fileWithMeta.meta.videoHeight = video.videoHeight;
     }
-    if (!isImage) URL.revokeObjectURL(objectUrl);
   } catch (e) {
     URL.revokeObjectURL(objectUrl);
+  } finally {
+    if (!(isVideo || isImage)) {
+      URL.revokeObjectURL(objectUrl);
+    }
   }
 };

@@ -279,12 +279,12 @@ const Dropzone = ({
       handleChangeStatus(fileWithMeta);
       return;
     }
-
     await generatePreview(fileWithMeta);
 
     if (validate) {
       const error = validate(fileWithMeta);
       if (error) {
+        console.error('ERROR', error);
         updateFileStatus(fileWithMeta, StatusValue.ErrorValidation);
         fileWithMeta.meta.validationError = error; // usually a string, but doesn't have to be
         handleChangeStatus(fileWithMeta);
@@ -293,6 +293,7 @@ const Dropzone = ({
     }
 
     const params = await getUploadParamsCallback(fileWithMeta);
+
     if (params) {
       if (autoUpload) {
         uploadFile(fileWithMeta, params);
