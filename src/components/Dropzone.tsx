@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Layout from './Layout.tsx';
 import {
   accepts,
@@ -6,7 +6,6 @@ import {
   FilesMap,
   filterNonNull,
   generatePreview,
-  getFilesFromEvent,
   HttpMethod,
   IExtra,
   IFileWithMeta,
@@ -67,6 +66,7 @@ const Dropzone = ({
     handleDragOver,
     handleDragEnter,
     handleDragLeave,
+    handleDrop,
   } = useDragState(accept);
 
   const [filesMap, setFilesMap] = useState<FilesMap>({});
@@ -306,13 +306,6 @@ const Dropzone = ({
     handleChangeStatus(fileWithMeta);
   };
 
-  const handleDrop = (event: React.DragEvent<HTMLElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const files = getFilesFromEvent(event);
-    handleFiles(files);
-  };
-
   useEffect(() => {
     const readyFiles = Object.values(filesMap).filter(
       f => f.meta.status === StatusValue.Ready,
@@ -331,18 +324,19 @@ const Dropzone = ({
 
   return (
     <Layout
-      ref={dropzoneRef}
+      active={active}
+      canCancel={resolveValue(canCancel, filesMap, extra)}
+      canRemove={resolveValue(canRemove, filesMap, extra)}
+      canRestart={resolveValue(canRestart, filesMap, extra)}
+      extra={extra}
+      files={Object.values(filesMap)}
       dropzoneProps={{
         onDragEnter: handleDragEnter,
         onDragOver: handleDragOver,
         onDragLeave: handleDragLeave,
-        onDrop: handleDrop,
+        onDrop: handleDrop(handleFiles),
       }}
-      canCancel={resolveValue(canCancel, filesMap, extra)}
-      canRemove={resolveValue(canRemove, filesMap, extra)}
-      canRestart={resolveValue(canRestart, filesMap, extra)}
-      files={Object.values(filesMap)}
-      extra={extra}
+      ref={dropzoneRef}
     />
   );
 };

@@ -44,6 +44,17 @@ const useDragState = (accept: string) => {
     }, 150);
   };
 
+  const handleDrop =
+    (callback: (files: FileInputItem[]) => void) =>
+    (event: React.DragEvent<HTMLElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setActive(false);
+      setDragged([]);
+      const files = getFilesFromEvent(event);
+      callback(files);
+    };
+
   return {
     active,
     dragged,
@@ -51,6 +62,7 @@ const useDragState = (accept: string) => {
     handleDragEnter,
     handleDragOver,
     handleDragLeave,
+    handleDrop,
   };
 };
 
