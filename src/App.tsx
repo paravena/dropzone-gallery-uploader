@@ -9,7 +9,7 @@ function App() {
     { meta },
     status,
   ) => {
-    // console.log(status, meta);
+    console.log(status, meta);
   };
 
   const handleSubmit: IDropzoneProps['onSubmit'] = (files, allFiles) => {
@@ -19,20 +19,10 @@ function App() {
 
   return (
     <Dropzone
-      onSubmit={handleSubmit}
-      onChangeStatus={handleChangeStatus}
-      getUploadParams={getUploadParams}
-      accept="*"
-      autoUpload={true}
-      timeout={100000}
       maxFiles={Number.MAX_SAFE_INTEGER}
-      maxSizeBytes={Number.MAX_SAFE_INTEGER}
-      canCancel={true}
-      canRemove={true}
-      canRestart={true}
-      multiple={true}
-      minSizeBytes={0}
-      disabled={false}
+      getUploadParams={getUploadParams}
+      onChangeStatus={handleChangeStatus}
+      onSubmit={handleSubmit}
     />
   );
 }

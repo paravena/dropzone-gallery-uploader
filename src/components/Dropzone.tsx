@@ -20,43 +20,44 @@ import {
 import useDragState from '../hooks/useDragState.ts';
 
 export type IDropzoneProps = {
+  accept?: string;
+  autoUpload?: boolean;
+  canCancel?: boolean | ResolveFn<boolean>;
+  canRemove?: boolean | ResolveFn<boolean>;
+  canRestart?: boolean | ResolveFn<boolean>;
+  disabled?: boolean;
+  getUploadParams?: (
+    file: IFileWithMeta,
+  ) => IUploadParams | Promise<IUploadParams>;
+  maxFiles: number;
+  maxSizeBytes?: number;
+  minSizeBytes?: number;
+  multiple?: boolean;
   onChangeStatus: (
     file: IFileWithMeta,
     status: StatusValue,
     allFiles: FilesMap,
   ) => { meta: { [name: string]: unknown } } | void;
-  getUploadParams?: (
-    file: IFileWithMeta,
-  ) => IUploadParams | Promise<IUploadParams>;
-  minSizeBytes: number;
-  maxSizeBytes: number;
-  maxFiles: number;
-  accept: string;
-  validate?: (file: IFileWithMeta) => unknown;
-  autoUpload: boolean;
-  timeout: number;
-  multiple: boolean;
-  disabled: boolean;
-  canCancel: boolean | ResolveFn<boolean>;
-  canRemove: boolean | ResolveFn<boolean>;
-  canRestart: boolean | ResolveFn<boolean>;
   onSubmit?: (successFiles: IFileWithMeta[], allFiles: IFileWithMeta[]) => void;
+  timeout?: number;
+  validate?: (file: IFileWithMeta) => unknown;
 };
 
 const Dropzone = ({
-  minSizeBytes,
-  maxSizeBytes,
-  maxFiles,
-  accept,
-  onChangeStatus,
+  accept = '*',
+  autoUpload = true,
+  canCancel = true,
+  canRemove = true,
+  canRestart = true,
+  // disabled = false,
   getUploadParams,
+  maxFiles,
+  maxSizeBytes = Number.MAX_SAFE_INTEGER,
+  minSizeBytes = 0,
+  multiple = true,
+  onChangeStatus,
   validate,
-  autoUpload,
-  timeout,
-  multiple,
-  canCancel,
-  canRemove,
-  canRestart,
+  timeout = 100000,
 }: IDropzoneProps) => {
   const dropzoneRef = useRef<HTMLDivElement | null>(null);
   const {
@@ -111,7 +112,6 @@ const Dropzone = ({
     fileWithMeta: IFileWithMeta,
     params: IUploadParams,
   ) => {
-    console.log('Upload file', fileWithMeta);
     const {
       url,
       method = HttpMethod.POST,
@@ -330,6 +330,7 @@ const Dropzone = ({
       canRestart={resolveValue(canRestart, filesMap, extra)}
       extra={extra}
       files={Object.values(filesMap)}
+      onChange={handleFiles}
       dropzoneProps={{
         onDragEnter: handleDragEnter,
         onDragOver: handleDragOver,

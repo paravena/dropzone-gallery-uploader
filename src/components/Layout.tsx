@@ -1,6 +1,6 @@
 import React, { forwardRef, ForwardRefRenderFunction, Fragment } from 'react';
 import clsx from 'clsx';
-import { IExtra, IFileWithMeta, ResolveFn } from '../utils';
+import { FileInputItem, IExtra, IFileWithMeta, ResolveFn } from '../utils';
 import Preview from './Preview';
 import Input from './Input';
 import { Transition } from '@headlessui/react';
@@ -19,14 +19,25 @@ type Props = {
     onDragLeave(event: React.DragEvent<HTMLElement>): void;
     onDrop(event: React.DragEvent<HTMLElement>): void;
   };
+  onChange: (files: FileInputItem[]) => void;
 };
 
 const LayoutComponent: ForwardRefRenderFunction<HTMLDivElement, Props> = (
-  { active, dropzoneProps, files, canCancel, canRestart, canRemove, extra },
+  {
+    active,
+    canCancel,
+    canRestart,
+    canRemove,
+    dropzoneProps,
+    extra,
+    files,
+    onChange,
+  },
   ref,
 ) => {
   const classNames = clsx('', {
-    'grid h-full w-full grid-cols-2 gap-4 md:grid-cols-3': files.length > 0,
+    'grid h-full w-full grid-cols-2 grid-flow-row gap-4 md:grid-cols-3':
+      files.length > 0,
     'flex justify-center items-center': files.length === 0,
     'border-2 border-dashed border-amber-400': active,
   });
@@ -34,7 +45,7 @@ const LayoutComponent: ForwardRefRenderFunction<HTMLDivElement, Props> = (
   return (
     <div className="relative bg-amber-200 p-3">
       <div ref={ref} className={classNames} {...dropzoneProps}>
-        <Input visible={files.length === 0} />
+        <Input visible={files.length === 0} onChange={onChange} />
         {files.map(f => {
           return (
             <Preview
