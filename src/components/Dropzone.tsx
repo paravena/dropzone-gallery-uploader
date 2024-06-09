@@ -4,9 +4,9 @@ import {
   accepts,
   FileInputItem,
   FilesMap,
+  FileUploader,
   filterNonNull,
   generatePreview,
-  HttpMethod,
   IExtra,
   IFileWithMeta,
   IUploadParams,
@@ -18,6 +18,7 @@ import {
   StatusValue,
 } from '../utils';
 import useDragState from '../hooks/useDragState.ts';
+import DropzoneProvider from './DropzoneProvider.tsx';
 
 export type IDropzoneProps = {
   accept?: string;
@@ -57,7 +58,6 @@ const Dropzone = ({
   multiple = true,
   onChangeStatus,
   validate,
-  timeout = 100000,
 }: IDropzoneProps) => {
   const dropzoneRef = useRef<HTMLDivElement | null>(null);
   const {
@@ -112,78 +112,21 @@ const Dropzone = ({
     fileWithMeta: IFileWithMeta,
     params: IUploadParams,
   ) => {
-    const {
-      url,
-      method = HttpMethod.POST,
-      body,
-      fields = {},
-      headers = {},
-      meta: extraMeta = {},
-    } = params;
-
-    if (!url) {
-      updateFileStatus(fileWithMeta, StatusValue.ErrorUploadParams);
-      handleChangeStatus(fileWithMeta);
-      return;
-    }
-
-    const xhr = new XMLHttpRequest();
-    xhr.open(method, url, true);
-
-    const formData = new FormData();
-    for (const [fieldName, fieldValue] of Object.entries(fields)) {
-      formData.append(fieldName, fieldValue);
-    }
-    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-    for (const [headerName, headerValue] of Object.entries(headers)) {
-      xhr.setRequestHeader(headerName, headerValue);
-    }
-
-    delete extraMeta.status;
-    fileWithMeta.meta = { ...fileWithMeta.meta, ...extraMeta };
-
-    // update progress (can be used to show progress indicator)
-    xhr.upload.addEventListener('progress', e => {
-      console.log('progress status', fileWithMeta.meta.status);
-      fileWithMeta.meta.percent = (e.loaded * 100.0) / e.total || 100;
-      updateFilesMapEntry(fileWithMeta.id, fileWithMeta);
-    });
-
-    xhr.addEventListener('readystatechange', () => {
-      const { readyState, status } = xhr;
-      const { ExceptionUpload, HeadersReceived, Done, ErrorUpload } =
-        StatusValue;
-      const isIntermediateState = readyState === 2 || readyState === 4;
-      const isStatusError = status >= 400;
-
-      // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/readyState
-      if (!isIntermediateState) return;
-
-      if (
-        xhr.status === 0 &&
-        fileWithMeta.meta.status !== StatusValue.Aborted
-      ) {
-        updateFileStatus(fileWithMeta, ExceptionUpload);
-        handleChangeStatus(fileWithMeta);
-      }
-
-      if (xhr.status > 0 && xhr.status < 400) {
-        fileWithMeta.meta.percent = 100;
-        const status = readyState === 2 ? HeadersReceived : Done;
+    const fileUploader = new FileUploader(params);
+    fileUploader.upload(fileWithMeta, {
+      onChangeStatus(status: StatusValue) {
         updateFileStatus(fileWithMeta, status);
         handleChangeStatus(fileWithMeta);
-      } else if (isStatusError && fileWithMeta.meta.status !== ErrorUpload) {
-        updateFileStatus(fileWithMeta, ErrorUpload);
+      },
+      onError(status: StatusValue) {
+        updateFileStatus(fileWithMeta, status);
         handleChangeStatus(fileWithMeta);
-      }
+      },
+      onProgress(event: ProgressEvent) {
+        fileWithMeta.meta.percent = (event.loaded * 100.0) / event.total || 100;
+        updateFilesMapEntry(fileWithMeta.id, fileWithMeta);
+      },
     });
-
-    formData.append('file', fileWithMeta.file);
-    if (timeout) xhr.timeout = timeout;
-    xhr.send(body || formData);
-    fileWithMeta.xhr = xhr;
-    updateFileStatus(fileWithMeta, StatusValue.Uploading);
-    handleChangeStatus(fileWithMeta);
   };
 
   const handleChangeStatus = (fileWithMeta: IFileWithMeta) => {
@@ -323,22 +266,24 @@ const Dropzone = ({
   }, [filesMap, handleFile]);
 
   return (
-    <Layout
-      active={active}
-      canCancel={resolveValue(canCancel, filesMap, extra)}
-      canRemove={resolveValue(canRemove, filesMap, extra)}
-      canRestart={resolveValue(canRestart, filesMap, extra)}
-      extra={extra}
-      files={Object.values(filesMap)}
-      onChange={handleFiles}
-      dropzoneProps={{
-        onDragEnter: handleDragEnter,
-        onDragOver: handleDragOver,
-        onDragLeave: handleDragLeave,
-        onDrop: handleDrop(handleFiles),
-      }}
-      ref={dropzoneRef}
-    />
+    <DropzoneProvider>
+      <Layout
+        active={active}
+        canCancel={resolveValue(canCancel, filesMap, extra)}
+        canRemove={resolveValue(canRemove, filesMap, extra)}
+        canRestart={resolveValue(canRestart, filesMap, extra)}
+        extra={extra}
+        files={Object.values(filesMap)}
+        onChange={handleFiles}
+        dropzoneProps={{
+          onDragEnter: handleDragEnter,
+          onDragOver: handleDragOver,
+          onDragLeave: handleDragLeave,
+          onDrop: handleDrop(handleFiles),
+        }}
+        ref={dropzoneRef}
+      />
+    </DropzoneProvider>
   );
 };
 

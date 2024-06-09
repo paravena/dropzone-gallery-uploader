@@ -56,7 +56,7 @@ const ProgressBar = ({
                 ? 100
                 : percent
             }
-            className="progress-unfilled:bg-gray-200 progress-filled:bg-gray-400 progress-unfilled:rounded-full progress-filled:rounded-full h-2"
+            className="h-2 progress-unfilled:rounded-full progress-unfilled:bg-gray-200 progress-filled:rounded-full progress-filled:bg-gray-400"
           />
         )}
 

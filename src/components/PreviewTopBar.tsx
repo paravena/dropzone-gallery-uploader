@@ -7,6 +7,11 @@ type Props = {
 };
 
 const PreviewTopBar = ({ children, show }: Props) => {
+  console.log('one');
+  setTimeout(() => {
+    console.log('two');
+  }, 1000);
+  console.log('three');
   return (
     <Transition
       show={show}
@@ -18,7 +23,7 @@ const PreviewTopBar = ({ children, show }: Props) => {
       leaveFrom="opacity-100"
       leaveTo="opacity-0"
     >
-      <div className="absolute top-0 flex w-full items-center justify-end rounded-t-lg bg-white p-2 px-2 py-1 opacity-70 shadow-lg ring-1 ring-white ring-opacity-5">
+      <div className="absolute top-0 z-10 flex w-full items-center justify-end gap-1 rounded-t-lg bg-white p-2 px-2 py-1 opacity-70 shadow-lg ring-1 ring-white ring-opacity-5">
         {children}
       </div>
     </Transition>

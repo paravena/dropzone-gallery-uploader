@@ -39,20 +39,16 @@ const LayoutComponent: ForwardRefRenderFunction<HTMLDivElement, Props> = (
     'grid h-full w-full grid-cols-2 grid-flow-row gap-4 md:grid-cols-3':
       files.length > 0,
     'flex justify-center items-center': files.length === 0,
-    'border-2 border-dashed border-amber-400': active,
+    'border-2 border-dashed border-green-400': active,
   });
 
   return (
-    <div className="relative bg-amber-200 p-3">
+    <div className="relative h-dvh bg-amber-200 p-3">
       <div ref={ref} className={classNames} {...dropzoneProps}>
         <Input visible={files.length === 0} onChange={onChange} />
         {files.map(f => {
           return (
             <Preview
-              className={''}
-              imageClassName={''}
-              style={{}}
-              imageStyle={{}}
               key={f.meta.id}
               fileWithMeta={f}
               meta={{ ...f.meta }}

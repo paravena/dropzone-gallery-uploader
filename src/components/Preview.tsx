@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   formatBytes,
   formatDuration,
@@ -11,14 +11,11 @@ import {
 import ProgressBar from './ProgressBar.tsx';
 import { TrashIcon } from '@heroicons/react/20/solid';
 import PreviewTopBar from './PreviewTopBar.tsx';
+import { useDropzone } from '../hooks/useDropzone.ts';
 
 type Props = {
   extra: IExtra;
   meta: IMeta;
-  className?: string;
-  imageClassName?: string;
-  style?: React.CSSProperties;
-  imageStyle?: React.CSSProperties;
   fileWithMeta: IFileWithMeta;
   isUpload: boolean;
   canCancel: boolean | ResolveFn<boolean>;
@@ -41,16 +38,15 @@ const Preview = ({
     videoWidth,
     type,
   },
-  className,
-  style,
-  imageStyle,
-  fileWithMeta: { cancel, remove, restart },
+  fileWithMeta,
   canCancel,
   canRemove,
   canRestart,
   isUpload,
 }: Props) => {
   const [showTopBar, setShowTopBar] = useState(false);
+  const { cancel, remove, restart } = fileWithMeta;
+  const { toggleSelectFile } = useDropzone();
   let title = `${name || '?'}, ${formatBytes(size)}`;
   if (duration) title = `${title}, ${formatDuration(duration)}`;
   if (
@@ -58,7 +54,7 @@ const Preview = ({
     status === StatusValue.ErrorValidation
   ) {
     return (
-      <div className={className} style={style}>
+      <div>
         <span className="dzu-previewFileNameError">{title}</span>
         {status === 'error_file_size' && (
           <span>{size < minSizeBytes ? 'File too small' : 'File too big'}</span>
@@ -93,9 +89,15 @@ const Preview = ({
       onMouseLeave={() => setShowTopBar(false)}
     >
       <PreviewTopBar show={showTopBar}>
+        <input
+          name="selectItem"
+          type="checkbox"
+          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+          onClick={() => toggleSelectFile(fileWithMeta)}
+        />
         <button
           type="button"
-          className="z-10 inline-flex rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          className="inline-flex rounded-md bg-white text-gray-300 hover:text-indigo-600 focus:outline-none"
           onClick={remove}
         >
           <TrashIcon className="h-5 w-5" />
@@ -104,7 +106,6 @@ const Preview = ({
       {previewUrl && (
         <img
           className="h-auto max-w-full rounded-lg"
-          style={imageStyle}
           src={previewUrl}
           alt={title}
           title={title}

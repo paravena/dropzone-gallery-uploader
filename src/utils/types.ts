@@ -64,6 +64,7 @@ export interface IUploadParams {
   fields?: { [name: string]: string | Blob };
   headers?: { [name: string]: string };
   meta?: { [name: string]: unknown };
+  timeout?: number;
 }
 
 export interface IExtra {

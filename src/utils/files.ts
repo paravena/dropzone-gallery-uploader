@@ -1,5 +1,10 @@
 import React from 'react';
-import { IFileWithMeta, StatusValue } from './types.ts';
+import {
+  HttpMethod,
+  IFileWithMeta,
+  IUploadParams,
+  StatusValue,
+} from './types.ts';
 import { v4 as uuid } from 'uuid';
 
 export type FileInputEvent =
@@ -162,3 +167,76 @@ export const generatePreview = async (fileWithMeta: IFileWithMeta) => {
     }
   }
 };
+
+export class FileUploader {
+  constructor(private params: IUploadParams) {}
+  upload(fileWithMeta: IFileWithMeta, fileUpload: IFileUpload) {
+    const {
+      url,
+      body,
+      fields = {},
+      headers = {},
+      meta: extraMeta = {},
+      method = HttpMethod.POST,
+      timeout = 100000,
+    } = this.params;
+
+    if (!url) {
+      fileUpload.onError(StatusValue.ErrorUploadParams);
+      return;
+    }
+
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, url, true);
+
+    const formData = new FormData();
+    for (const [fieldName, fieldValue] of Object.entries(fields)) {
+      formData.append(fieldName, fieldValue);
+    }
+
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    for (const [headerName, headerValue] of Object.entries(headers)) {
+      xhr.setRequestHeader(headerName, headerValue);
+    }
+
+    delete extraMeta.status;
+    fileWithMeta.meta = { ...fileWithMeta.meta, ...extraMeta };
+
+    xhr.upload.addEventListener('progress', event => {
+      fileUpload.onProgress(event);
+    });
+
+    xhr.addEventListener('readystatechange', () => {
+      const { readyState, status } = xhr;
+      const { ExceptionUpload, HeadersReceived, Done, ErrorUpload } =
+        StatusValue;
+      const isIntermediateState = readyState === 2 || readyState === 4;
+      const isStatusError = status >= 400;
+      // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/readyState
+      if (!isIntermediateState) return;
+      if (
+        xhr.status === 0 &&
+        fileWithMeta.meta.status !== StatusValue.Aborted
+      ) {
+        fileUpload.onError(ExceptionUpload);
+      }
+      if (xhr.status > 0 && xhr.status < 400) {
+        const status = readyState === 2 ? HeadersReceived : Done;
+        fileUpload.onChangeStatus(status);
+      } else if (isStatusError && fileWithMeta.meta.status !== ErrorUpload) {
+        fileUpload.onChangeStatus(ErrorUpload);
+      }
+    });
+    formData.append('file', fileWithMeta.file);
+    if (timeout) xhr.timeout = timeout;
+    xhr.send(body || formData);
+    fileWithMeta.xhr = xhr;
+    fileUpload.onChangeStatus(StatusValue.Uploading);
+  }
+}
+
+export interface IFileUpload {
+  onChangeStatus(status: StatusValue): void;
+  onProgress(event: ProgressEvent): void;
+  onError(status: StatusValue): void;
+}
