@@ -11,7 +11,7 @@ type Props = {
 };
 
 const Input: React.FC<Props> = ({
-  title = 'Drop files here to upload',
+  title = 'Drop files to upload',
   visible,
   onChange,
   multiple = true,

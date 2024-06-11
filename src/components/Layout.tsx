@@ -36,7 +36,7 @@ const LayoutComponent: ForwardRefRenderFunction<HTMLDivElement, Props> = (
   ref,
 ) => {
   const classNames = clsx('h-full w-full', {
-    'grid grid-cols-1 gap-4 md:grid-cols-4 grid-rows-3': files.length > 0,
+    'flex flex-wrap gap-4': files.length > 0,
     'flex justify-center items-center': files.length === 0,
     'border-2 border-solid border-blue-400 rounded-md': active,
   });
@@ -69,9 +69,10 @@ const LayoutComponent: ForwardRefRenderFunction<HTMLDivElement, Props> = (
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center bg-gray-300 p-2 text-sm">
-            Drop files to upload&nbsp;
-            <ArrowUpTrayIcon className="h-4 w-4" />
+          <div className="absolute left-2/4 top-2/4 z-10 flex -translate-x-2/4 -translate-y-2/4 transform flex-col items-center justify-center rounded-md border-2 border-solid border-blue-400 bg-gray-300 px-10 py-8 text-sm">
+            <ArrowUpTrayIcon className="h-8 w-8" />
+            <p>Drop files to upload</p>
+            <p>JPEG, PNG, HEIF, WEBP, AVIF, or SVG files</p>
           </div>
         </Transition>
       </div>

@@ -84,7 +84,7 @@ const Preview = ({
 
   return (
     <div
-      className="relative h-full"
+      className="relative h-56 w-64"
       onMouseEnter={() => setShowTopBar(true)}
       onMouseLeave={() => setShowTopBar(false)}
     >
