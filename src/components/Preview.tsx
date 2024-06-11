@@ -84,7 +84,7 @@ const Preview = ({
 
   return (
     <div
-      className="relative"
+      className="relative h-full"
       onMouseEnter={() => setShowTopBar(true)}
       onMouseLeave={() => setShowTopBar(false)}
     >
@@ -105,7 +105,7 @@ const Preview = ({
       </PreviewTopBar>
       {previewUrl && (
         <img
-          className="h-auto max-w-full rounded-lg"
+          className="h-full w-full rounded-lg object-cover"
           src={previewUrl}
           alt={title}
           title={title}
@@ -117,7 +117,7 @@ const Preview = ({
           width={videoWidth}
           height={videoHeight}
           controls
-          className="rounded-lg"
+          className="h-full w-full rounded-lg object-cover"
         >
           <source src={videoUrl} type={type} />
         </video>

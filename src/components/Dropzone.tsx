@@ -98,7 +98,20 @@ const Dropzone = ({
     maxSizeBytes,
     maxFiles,
   } as IExtra;
+
   //const dropzoneDisabled = resolveValue(disabled, files, extra);
+
+  const handleFileStatus = (
+    fileWithMeta: IFileWithMeta,
+    status: StatusValue,
+    validationError?: string,
+  ) => {
+    updateFileStatus(fileWithMeta, status);
+    if (validationError) {
+      fileWithMeta.meta.validationError = validationError;
+    }
+    handleChangeStatus(fileWithMeta);
+  };
 
   const updateFileStatus = (
     fileWithMeta: IFileWithMeta,
@@ -106,27 +119,6 @@ const Dropzone = ({
   ) => {
     fileWithMeta.meta.status = value;
     updateFilesMapEntry(fileWithMeta.id, fileWithMeta);
-  };
-
-  const uploadFile = async (
-    fileWithMeta: IFileWithMeta,
-    params: IUploadParams,
-  ) => {
-    const fileUploader = new FileUploader(params);
-    fileUploader.upload(fileWithMeta, {
-      onChangeStatus(status: StatusValue) {
-        updateFileStatus(fileWithMeta, status);
-        handleChangeStatus(fileWithMeta);
-      },
-      onError(status: StatusValue) {
-        updateFileStatus(fileWithMeta, status);
-        handleChangeStatus(fileWithMeta);
-      },
-      onProgress(event: ProgressEvent) {
-        fileWithMeta.meta.percent = (event.loaded * 100.0) / event.total || 100;
-        updateFilesMapEntry(fileWithMeta.id, fileWithMeta);
-      },
-    });
   };
 
   const handleChangeStatus = (fileWithMeta: IFileWithMeta) => {
@@ -139,18 +131,35 @@ const Dropzone = ({
     }
   };
 
+  const uploadFile = async (
+    fileWithMeta: IFileWithMeta,
+    params: IUploadParams,
+  ) => {
+    const fileUploader = new FileUploader(params);
+    fileUploader.upload(fileWithMeta, {
+      onChangeStatus(status: StatusValue) {
+        handleFileStatus(fileWithMeta, status);
+      },
+      onError(status: StatusValue) {
+        handleFileStatus(fileWithMeta, status);
+      },
+      onProgress(event: ProgressEvent) {
+        fileWithMeta.meta.percent = (event.loaded * 100.0) / event.total || 100;
+        updateFilesMapEntry(fileWithMeta.id, fileWithMeta);
+      },
+    });
+  };
+
   const handleCancel = (fileWithMeta: IFileWithMeta) => {
     if (fileWithMeta.meta.status !== StatusValue.Uploading) return;
-    updateFileStatus(fileWithMeta, StatusValue.Aborted);
+    handleFileStatus(fileWithMeta, StatusValue.Aborted);
     if (fileWithMeta.xhr) fileWithMeta.xhr.abort();
-    handleChangeStatus(fileWithMeta);
   };
 
   const handleRemove = (fileWithMeta: IFileWithMeta) => {
     if (filesMap[fileWithMeta.id] !== undefined) {
       URL.revokeObjectURL(fileWithMeta.meta.previewUrl || '');
-      updateFileStatus(fileWithMeta, StatusValue.Removed);
-      handleChangeStatus(fileWithMeta);
+      handleFileStatus(fileWithMeta, StatusValue.Removed);
       setFilesMap(prev => {
         delete prev[fileWithMeta.id];
         return { ...prev };
@@ -186,7 +195,7 @@ const Dropzone = ({
       .reduce((acc, item) => {
         return { ...acc, [item.id]: item };
       }, {});
-    setFilesMap(prev => ({ ...prev, ...map }));
+    setFilesMap(prev => ({ ...map, ...prev }));
   };
 
   const handleFile = async (fileWithMeta: IFileWithMeta) => {
@@ -196,57 +205,54 @@ const Dropzone = ({
       fileWithMeta.file.type !== 'application/x-moz-file' &&
       !accepts(fileWithMeta.file, accept)
     ) {
-      updateFileStatus(fileWithMeta, StatusValue.RejectedFileType);
-      handleChangeStatus(fileWithMeta);
+      handleFileStatus(fileWithMeta, StatusValue.RejectedFileType);
       return;
     }
-    // TODO this is in a wrong place
-    if (Object.values(filesMap).length >= maxFiles) {
-      updateFileStatus(fileWithMeta, StatusValue.RejectedMaxFiles);
-      handleChangeStatus(fileWithMeta);
+
+    if (
+      fileWithMeta.file.size < minSizeBytes ||
+      fileWithMeta.file.size > maxSizeBytes
+    ) {
+      handleFileStatus(fileWithMeta, StatusValue.ErrorFileSize);
       return;
+    }
+
+    if (Object.values(filesMap).length >= maxFiles) {
+      handleFileStatus(fileWithMeta, StatusValue.RejectedMaxFiles);
+      return;
+    }
+
+    if (validate) {
+      const error = validate(fileWithMeta);
+      if (error) {
+        console.error('ERROR', error);
+        handleFileStatus(
+          fileWithMeta,
+          StatusValue.ErrorValidation,
+          error as string,
+        );
+        return;
+      }
     }
 
     fileWithMeta.cancel = () => handleCancel(fileWithMeta);
     fileWithMeta.remove = () => handleRemove(fileWithMeta);
     fileWithMeta.restart = () => handleRestart(fileWithMeta);
 
-    updateFileStatus(fileWithMeta, StatusValue.Preparing);
-    handleChangeStatus(fileWithMeta);
+    handleFileStatus(fileWithMeta, StatusValue.Preparing);
 
-    if (
-      fileWithMeta.file.size < minSizeBytes ||
-      fileWithMeta.file.size > maxSizeBytes
-    ) {
-      updateFileStatus(fileWithMeta, StatusValue.ErrorFileSize);
-      handleChangeStatus(fileWithMeta);
-      return;
-    }
     await generatePreview(fileWithMeta);
 
-    if (validate) {
-      const error = validate(fileWithMeta);
-      if (error) {
-        console.error('ERROR', error);
-        updateFileStatus(fileWithMeta, StatusValue.ErrorValidation);
-        fileWithMeta.meta.validationError = error; // usually a string, but doesn't have to be
-        handleChangeStatus(fileWithMeta);
-        return;
-      }
-    }
-
     const params = await getUploadParamsCallback(fileWithMeta);
-
     if (params) {
       if (autoUpload) {
         uploadFile(fileWithMeta, params);
       } else {
-        updateFileStatus(fileWithMeta, StatusValue.Ready);
+        handleFileStatus(fileWithMeta, StatusValue.Ready);
       }
     } else {
-      updateFileStatus(fileWithMeta, StatusValue.Done);
+      handleFileStatus(fileWithMeta, StatusValue.Done);
     }
-    handleChangeStatus(fileWithMeta);
   };
 
   useEffect(() => {

@@ -35,15 +35,14 @@ const LayoutComponent: ForwardRefRenderFunction<HTMLDivElement, Props> = (
   },
   ref,
 ) => {
-  const classNames = clsx('', {
-    'grid h-full w-full grid-cols-2 grid-flow-row gap-4 md:grid-cols-3':
-      files.length > 0,
+  const classNames = clsx('h-full w-full', {
+    'grid grid-cols-1 gap-4 md:grid-cols-4 grid-rows-3': files.length > 0,
     'flex justify-center items-center': files.length === 0,
-    'border-2 border-dashed border-green-400': active,
+    'border-2 border-solid border-blue-400 rounded-md': active,
   });
 
   return (
-    <div className="relative h-dvh bg-amber-200 p-3">
+    <div className="relative h-dvh bg-gray-400 p-3">
       <div ref={ref} className={classNames} {...dropzoneProps}>
         <Input visible={files.length === 0} onChange={onChange} />
         {files.map(f => {
@@ -71,7 +70,7 @@ const LayoutComponent: ForwardRefRenderFunction<HTMLDivElement, Props> = (
           leaveTo="opacity-0"
         >
           <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center bg-gray-300 p-2 text-sm">
-            Drop files here to upload&nbsp;
+            Drop files to upload&nbsp;
             <ArrowUpTrayIcon className="h-4 w-4" />
           </div>
         </Transition>

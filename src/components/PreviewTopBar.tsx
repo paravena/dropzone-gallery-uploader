@@ -7,11 +7,6 @@ type Props = {
 };
 
 const PreviewTopBar = ({ children, show }: Props) => {
-  console.log('one');
-  setTimeout(() => {
-    console.log('two');
-  }, 1000);
-  console.log('three');
   return (
     <Transition
       show={show}
