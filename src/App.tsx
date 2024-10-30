@@ -18,12 +18,14 @@ function App() {
   };
 
   return (
-    <Dropzone
-      maxFiles={Number.MAX_SAFE_INTEGER}
-      getUploadParams={getUploadParams}
-      onChangeStatus={handleChangeStatus}
-      onSubmit={handleSubmit}
-    />
+    <section className="flex h-dvh w-full items-center justify-center overflow-hidden p-8">
+      <Dropzone
+        maxFiles={Number.MAX_SAFE_INTEGER}
+        getUploadParams={getUploadParams}
+        onChangeStatus={handleChangeStatus}
+        onSubmit={handleSubmit}
+      />
+    </section>
   );
 }
 

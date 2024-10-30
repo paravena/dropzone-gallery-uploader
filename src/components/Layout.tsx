@@ -37,14 +37,17 @@ const LayoutComponent: ForwardRefRenderFunction<HTMLDivElement, Props> = (
 ) => {
   const classNames = clsx('flex w-full', {
     'flex-wrap gap-4 flex-grow flex-shrink items-start': files.length > 0,
-    'justify-center items-center': files.length === 0,
+    'justify-center items-center h-full': files.length === 0,
   });
 
   return (
     <div
-      className={clsx('relative h-dvh overflow-hidden bg-gray-400  p-3', {
-        'rounded-md border-2 border-solid border-blue-400': active,
-      })}
+      className={clsx(
+        'relative h-full w-full overflow-hidden bg-gray-200 p-3',
+        {
+          'rounded-md border-2 border-solid border-blue-400': active,
+        },
+      )}
       {...dropzoneProps}
     >
       <div ref={ref} className={classNames}>

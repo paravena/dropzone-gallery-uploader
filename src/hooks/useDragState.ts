@@ -41,7 +41,7 @@ const useDragState = (accept: string) => {
     dragTimeoutLeaveId.current = setTimeout(() => {
       setActive(false);
       setDragged([]);
-    }, 150);
+    }, 150); // TODO hard coded elapsed time
   };
 
   const handleDrop =
