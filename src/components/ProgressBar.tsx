@@ -5,7 +5,6 @@ import { Fragment, useEffect, useState } from 'react';
 import { XMarkIcon, PlayIcon, PauseIcon } from '@heroicons/react/20/solid';
 
 type Props = {
-  isUpload: boolean;
   percent: number;
   canCancel: boolean | ResolveFn<boolean>;
   status: StatusValue;
@@ -17,7 +16,6 @@ type Props = {
 };
 
 const ProgressBar = ({
-  isUpload,
   cancel,
   remove,
   restart,
@@ -47,18 +45,16 @@ const ProgressBar = ({
       leaveTo="opacity-0"
     >
       <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 transform items-center rounded-lg bg-white p-2 shadow-lg ring-1 ring-white ring-opacity-5">
-        {isUpload && (
-          <progress
-            max={100}
-            value={
-              status === StatusValue.Done ||
-              status === StatusValue.HeadersReceived
-                ? 100
-                : percent
-            }
-            className="h-2 progress-unfilled:rounded-full progress-unfilled:bg-gray-200 progress-filled:rounded-full progress-filled:bg-gray-400"
-          />
-        )}
+        <progress
+          max={100}
+          value={
+            status === StatusValue.Done ||
+            status === StatusValue.HeadersReceived
+              ? 100
+              : percent
+          }
+          className="h-2 progress-unfilled:rounded-full progress-unfilled:bg-gray-200 progress-filled:rounded-full progress-filled:bg-gray-400"
+        />
 
         {status === StatusValue.Uploading && canCancel && (
           <button

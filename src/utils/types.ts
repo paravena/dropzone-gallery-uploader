@@ -19,32 +19,28 @@ export enum StatusValue {
 }
 
 export interface IMeta {
-  id: string;
-  status: StatusValue;
   type: string; // MIME type, example: `image/*`
-  name: string;
-  uploadedDate: string; // ISO string
-  percent: number;
   size: number; // bytes
-  lastModifiedDate: string; // ISO string
-  previewUrl?: string; // from URL.createObjectURL
   duration?: number; // seconds
   width?: number;
   height?: number;
-  videoWidth?: number;
-  videoHeight?: number;
   validationError?: unknown;
-  videoUrl?: string;
 }
 
 export interface IFileWithMeta {
-  file: File;
+  id: string;
+  name: string;
+  file?: File;
+  status: StatusValue;
+  percent: number;
+  selected: boolean;
   meta: IMeta;
+  xhr?: XMLHttpRequest;
   cancel: () => void;
   restart: () => void;
   remove: () => void;
-  xhr?: XMLHttpRequest;
-  id: string;
+  previewUrl?: string;
+  uploadedUrl?: string;
 }
 
 export enum HttpMethod {
@@ -77,5 +73,3 @@ export interface IExtra {
   maxSizeBytes: number;
   maxFiles: number;
 }
-
-export type FilesMap = Record<string, IFileWithMeta>;

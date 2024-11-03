@@ -6,24 +6,21 @@ function App() {
   };
 
   const handleChangeStatus: IDropzoneProps['onChangeStatus'] = (
-    { meta },
     status,
+    { meta },
   ) => {
     console.log(status, meta);
-  };
-
-  const handleSubmit: IDropzoneProps['onSubmit'] = (files, allFiles) => {
-    console.log(files.map(f => f.meta));
-    allFiles.forEach(f => f.remove());
   };
 
   return (
     <section className="flex h-dvh w-full items-center justify-center overflow-hidden p-8">
       <Dropzone
+        files={[]}
         maxFiles={Number.MAX_SAFE_INTEGER}
         getUploadParams={getUploadParams}
         onChangeStatus={handleChangeStatus}
-        onSubmit={handleSubmit}
+        onUploadedFiles={() => {}}
+        onSelectedFiles={() => {}}
       />
     </section>
   );

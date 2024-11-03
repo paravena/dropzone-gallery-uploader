@@ -1,3 +1,5 @@
+import { StatusValue } from './types.ts';
+
 export type ResolveFn<T> = (...args: unknown[]) => T;
 
 export const resolveValue = <T = unknown>(
@@ -13,4 +15,16 @@ export const logError = (message: string, error: unknown) =>
 
 export const filterNonNull = <T>(value: T | null): value is T => {
   return value !== null;
+};
+
+export const isErrorStatus = (status: StatusValue) => {
+  return [
+    StatusValue.ErrorFileSize,
+    StatusValue.ErrorValidation,
+    StatusValue.ErrorUploadParams,
+    StatusValue.ErrorUpload,
+    StatusValue.ExceptionUpload,
+    StatusValue.RejectedFileType,
+    StatusValue.RejectedMaxFiles,
+  ].includes(status);
 };

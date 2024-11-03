@@ -20,6 +20,8 @@ type Props = {
     onDrop(event: React.DragEvent<HTMLElement>): void;
   };
   onChange: (files: FileInputItem[]) => void;
+  onSelectedFile: (file: IFileWithMeta) => void;
+  disabledSelection: boolean;
 };
 
 const LayoutComponent: ForwardRefRenderFunction<HTMLDivElement, Props> = (
@@ -29,9 +31,10 @@ const LayoutComponent: ForwardRefRenderFunction<HTMLDivElement, Props> = (
     canRestart,
     canRemove,
     dropzoneProps,
-    extra,
     files,
     onChange,
+    onSelectedFile,
+    disabledSelection,
   },
   ref,
 ) => {
@@ -55,14 +58,15 @@ const LayoutComponent: ForwardRefRenderFunction<HTMLDivElement, Props> = (
         {files.map(f => {
           return (
             <Preview
-              key={f.meta.id}
+              key={f.id}
               fileWithMeta={f}
-              meta={{ ...f.meta }}
-              isUpload={true}
               canCancel={canCancel}
               canRemove={canRemove}
               canRestart={canRestart}
-              extra={extra}
+              onSelected={mediaFile => {
+                onSelectedFile(mediaFile);
+              }}
+              disabled={disabledSelection}
             />
           );
         })}

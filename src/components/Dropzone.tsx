@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Layout from './Layout.tsx';
 import {
   accepts,
   FileInputItem,
-  FilesMap,
   FileUploader,
   filterNonNull,
   generatePreview,
@@ -20,80 +19,95 @@ import {
 import useDragState from '../hooks/useDragState.ts';
 import DropzoneProvider from './DropzoneProvider.tsx';
 
+// TODO change this to something more generic
+const DEFAULT_PARAMS: IUploadParams = {
+  url: 'https://httpbin.org/post',
+  // url: `${process.env.NEXT_PUBLIC_FILESTACK_API_URL}/store/S3?key=${process.env.NEXT_PUBLIC_FILESTACK_API_KEY}`,
+};
+
+// TODO change this to something more generic
+type IFileStackResponse = {
+  url: string;
+  size: number;
+  type: string;
+  filename: string;
+  key: string;
+};
+
 export type IDropzoneProps = {
+  files?: IFileWithMeta[];
   accept?: string;
-  autoUpload?: boolean;
   canCancel?: boolean | ResolveFn<boolean>;
   canRemove?: boolean | ResolveFn<boolean>;
   canRestart?: boolean | ResolveFn<boolean>;
   disabled?: boolean;
-  getUploadParams?: (
-    file: IFileWithMeta,
-  ) => IUploadParams | Promise<IUploadParams>;
   maxFiles: number;
   maxSizeBytes?: number;
   minSizeBytes?: number;
+  maxSelectedFiles?: number;
   multiple?: boolean;
   onChangeStatus: (
-    file: IFileWithMeta,
     status: StatusValue,
-    allFiles: FilesMap,
+    fileWithMeta: IFileWithMeta,
+    allFiles: IFileWithMeta[],
   ) => { meta: { [name: string]: unknown } } | void;
-  onSubmit?: (successFiles: IFileWithMeta[], allFiles: IFileWithMeta[]) => void;
+  onError?: (status: StatusValue, fileWithMeta?: IFileWithMeta) => void;
+  onSelectedFiles: (selectedMediaFiles: IFileWithMeta[]) => void;
+  onUploadedFiles: (uploadedMediaFiles: IFileWithMeta[]) => void;
+  getUploadParams?: (
+    file: IFileWithMeta,
+  ) => IUploadParams | Promise<IUploadParams>;
   timeout?: number;
   validate?: (file: IFileWithMeta) => unknown;
 };
 
 const Dropzone = ({
+  files = [],
   accept = '*',
-  autoUpload = true,
   canCancel = true,
   canRemove = true,
   canRestart = true,
-  // disabled = false,
-  getUploadParams,
   maxFiles,
   maxSizeBytes = Number.MAX_SAFE_INTEGER,
+  maxSelectedFiles = Number.MAX_SAFE_INTEGER,
   minSizeBytes = 0,
-  multiple = true,
-  onChangeStatus,
+  getUploadParams,
   validate,
+  onChangeStatus,
+  onUploadedFiles,
+  onSelectedFiles,
+  onError,
 }: IDropzoneProps) => {
   const dropzoneRef = useRef<HTMLDivElement | null>(null);
   const {
     active,
-    dragged,
-    reject,
     handleDragOver,
     handleDragEnter,
     handleDragLeave,
     handleDrop,
   } = useDragState(accept);
 
-  const [filesMap, setFilesMap] = useState<FilesMap>({});
-  const updateFilesMapEntry = (id: string, value: IFileWithMeta) => {
-    setFilesMap(prev => ({ ...prev, [id]: value }));
+  const [filesMap, setFilesMap] = useState<IFileWithMeta[]>([]);
+
+  const updateFilesMapEntry = (id: string, fileWithMeta: IFileWithMeta) => {
+    setFilesMap(prevMediaFiles =>
+      prevMediaFiles.map(mf => (mf.id === id ? { ...fileWithMeta } : mf)),
+    );
   };
 
+  // TODO not ideal
   const getUploadParamsCallback = useCallback(
     async (fileWithMeta: IFileWithMeta) => {
-      let params = null;
-      try {
-        params = getUploadParams ? await getUploadParams(fileWithMeta) : null;
-      } catch (e) {
-        logError('Error Upload Params', e);
-      }
-      return params;
+      return getUploadParams
+        ? await getUploadParams(fileWithMeta)
+        : DEFAULT_PARAMS;
     },
     [getUploadParams],
   );
 
   const extra = {
     active,
-    reject,
-    dragged,
     accept,
-    multiple,
     minSizeBytes,
     maxSizeBytes,
     maxFiles,
@@ -104,172 +118,203 @@ const Dropzone = ({
   const handleFileStatus = (
     fileWithMeta: IFileWithMeta,
     status: StatusValue,
-    validationError?: string,
+    validationError?: unknown,
   ) => {
     updateFileStatus(fileWithMeta, status);
     if (validationError) {
       fileWithMeta.meta.validationError = validationError;
     }
-    handleChangeStatus(fileWithMeta);
+    notifyChangeStatusEvent(fileWithMeta);
   };
 
   const updateFileStatus = (
     fileWithMeta: IFileWithMeta,
     value: StatusValue,
   ) => {
-    fileWithMeta.meta.status = value;
+    fileWithMeta.status = value;
     updateFilesMapEntry(fileWithMeta.id, fileWithMeta);
   };
 
-  const handleChangeStatus = (fileWithMeta: IFileWithMeta) => {
+  const notifyChangeStatusEvent = (fileWithMeta: IFileWithMeta) => {
     if (!onChangeStatus) return;
-    const { meta = {} } =
-      onChangeStatus(fileWithMeta, fileWithMeta.meta.status, filesMap) || {};
-    if (meta) {
-      delete meta.status;
-      fileWithMeta.meta = { ...fileWithMeta.meta, ...meta };
-    }
+    onChangeStatus(fileWithMeta.status, fileWithMeta, filesMap);
   };
 
   const uploadFile = async (
     fileWithMeta: IFileWithMeta,
     params: IUploadParams,
   ) => {
-    const fileUploader = new FileUploader(params);
-    fileUploader.upload(fileWithMeta, {
-      onChangeStatus(status: StatusValue) {
-        handleFileStatus(fileWithMeta, status);
-      },
-      onError(status: StatusValue) {
-        handleFileStatus(fileWithMeta, status);
-      },
-      onProgress(event: ProgressEvent) {
-        fileWithMeta.meta.percent = (event.loaded * 100.0) / event.total || 100;
-        updateFilesMapEntry(fileWithMeta.id, fileWithMeta);
-      },
-    });
+    const fileUploader = new FileUploader<IFileStackResponse>(params);
+    try {
+      const result = await fileUploader.upload(
+        fileWithMeta as Required<IFileWithMeta>,
+        {
+          onChangeStatus(status: StatusValue) {
+            handleFileStatus(fileWithMeta, status);
+          },
+          onError(status: StatusValue) {
+            handleFileStatus(fileWithMeta, status);
+          },
+          onProgress(event: ProgressEvent) {
+            fileWithMeta.percent = (event.loaded * 100.0) / event.total || 100;
+            updateFilesMapEntry(fileWithMeta.id, fileWithMeta);
+          },
+        },
+      );
+      updateFileStatus(fileWithMeta, StatusValue.Done);
+      return result;
+    } catch (e) {
+      handleFileStatus(fileWithMeta, StatusValue.ErrorUpload, e);
+    }
   };
 
   const handleCancel = (fileWithMeta: IFileWithMeta) => {
-    if (fileWithMeta.meta.status !== StatusValue.Uploading) return;
+    if (fileWithMeta.status !== StatusValue.Uploading) return;
     handleFileStatus(fileWithMeta, StatusValue.Aborted);
     if (fileWithMeta.xhr) fileWithMeta.xhr.abort();
   };
 
   const handleRemove = (fileWithMeta: IFileWithMeta) => {
-    if (filesMap[fileWithMeta.id] !== undefined) {
-      URL.revokeObjectURL(fileWithMeta.meta.previewUrl || '');
+    const index = filesMap.findIndex(mf => mf.id === fileWithMeta.id);
+    if (index > -1) {
+      URL.revokeObjectURL(fileWithMeta.previewUrl || '');
       handleFileStatus(fileWithMeta, StatusValue.Removed);
-      setFilesMap(prev => {
-        delete prev[fileWithMeta.id];
-        return { ...prev };
-      });
+      setFilesMap(prev => prev.filter(mf => mf.id === fileWithMeta.id));
     }
   };
 
   const handleRestart = async (fileWithMeta: IFileWithMeta) => {
     if (!getUploadParams) return;
-
-    if (fileWithMeta.meta.status === StatusValue.Ready) {
+    if (fileWithMeta.status === StatusValue.Ready) {
       updateFileStatus(fileWithMeta, StatusValue.Started);
     } else {
       updateFileStatus(fileWithMeta, StatusValue.Restarted);
     }
-    handleChangeStatus(fileWithMeta);
-    const params = await getUploadParams(fileWithMeta);
-    if (params) {
-      uploadFile(fileWithMeta, params);
-      fileWithMeta.meta.percent = 0;
-      updateFilesMapEntry(fileWithMeta.id, fileWithMeta);
-    } else {
-      updateFileStatus(fileWithMeta, StatusValue.Done);
-    }
-    handleChangeStatus(fileWithMeta);
+    notifyChangeStatusEvent(fileWithMeta);
+    const params = await getUploadParamsCallback(fileWithMeta);
+    const result = (await uploadFile(
+      fileWithMeta,
+      params,
+    )) as IFileStackResponse;
+    fileWithMeta.percent = 0;
+    fileWithMeta.uploadedUrl = result?.url ?? '';
+    updateFilesMapEntry(fileWithMeta.id, fileWithMeta);
+    notifyChangeStatusEvent(fileWithMeta);
   };
 
   const handleFiles = (items: FileInputItem[]) => {
-    const map = items
+    const readyMediaFiles = items
       .map(mapFileInputItemToFile)
       .filter(filterNonNull)
-      .map(mapFileToFileWithMeta)
-      .reduce((acc, item) => {
-        return { ...acc, [item.id]: item };
-      }, {});
-    setFilesMap(prev => ({ ...map, ...prev }));
+      .map(mapFileToFileWithMeta);
+
+    setFilesMap(prevMediaFiles => [...readyMediaFiles, ...prevMediaFiles]);
   };
 
   const handleFile = async (fileWithMeta: IFileWithMeta) => {
-    // firefox versions prior to 53 return a bogus mime type for file drag events,
-    // so files with that mime type are always accepted
-    if (
-      fileWithMeta.file.type !== 'application/x-moz-file' &&
-      !accepts(fileWithMeta.file, accept)
-    ) {
-      handleFileStatus(fileWithMeta, StatusValue.RejectedFileType);
-      return;
-    }
-
-    if (
-      fileWithMeta.file.size < minSizeBytes ||
-      fileWithMeta.file.size > maxSizeBytes
-    ) {
-      handleFileStatus(fileWithMeta, StatusValue.ErrorFileSize);
-      return;
-    }
-
-    if (Object.values(filesMap).length >= maxFiles) {
-      handleFileStatus(fileWithMeta, StatusValue.RejectedMaxFiles);
-      return;
-    }
-
-    if (validate) {
-      const error = validate(fileWithMeta);
-      if (error) {
-        console.error('ERROR', error);
-        handleFileStatus(
-          fileWithMeta,
-          StatusValue.ErrorValidation,
-          error as string,
-        );
-        return;
-      }
-    }
-
     fileWithMeta.cancel = () => handleCancel(fileWithMeta);
     fileWithMeta.remove = () => handleRemove(fileWithMeta);
     fileWithMeta.restart = () => handleRestart(fileWithMeta);
-
-    handleFileStatus(fileWithMeta, StatusValue.Preparing);
-
-    await generatePreview(fileWithMeta);
-
     const params = await getUploadParamsCallback(fileWithMeta);
-    if (params) {
-      if (autoUpload) {
-        uploadFile(fileWithMeta, params);
-      } else {
-        handleFileStatus(fileWithMeta, StatusValue.Ready);
-      }
-    } else {
-      handleFileStatus(fileWithMeta, StatusValue.Done);
-    }
+    handleFileStatus(fileWithMeta, StatusValue.Preparing);
+    await generatePreview(fileWithMeta as Required<IFileWithMeta>);
+    const result = await uploadFile(fileWithMeta, params);
+    return {
+      ...fileWithMeta,
+      uploadedUrl: result?.url ?? '',
+    };
   };
 
+  const validateAllFiles = (readyFiles: IFileWithMeta[]) => {
+    const uploadedFiles = filesMap.filter(mf => mf.status === StatusValue.Done);
+    if (
+      readyFiles.length > 0 &&
+      readyFiles.length + uploadedFiles.length > maxFiles
+    ) {
+      handleFileStatus(readyFiles[0], StatusValue.RejectedMaxFiles);
+      return [{ valid: false, status: StatusValue.RejectedMaxFiles }];
+    }
+    return readyFiles.map(validateFile);
+  };
+
+  const validateFile = (
+    mediaFile: IFileWithMeta,
+  ): { valid: boolean; status?: StatusValue; mediaFile?: IFileWithMeta } => {
+    // firefox versions prior to 53 return a bogus mime type for file drag events,
+    // so files with that mime type are always accepted
+    if (mediaFile.file === undefined) {
+      return { valid: false };
+    }
+
+    if (
+      mediaFile.file.type !== 'application/x-moz-file' &&
+      !accepts(mediaFile.file, accept)
+    ) {
+      handleFileStatus(mediaFile, StatusValue.RejectedFileType);
+      return { valid: false, status: StatusValue.RejectedFileType, mediaFile };
+    }
+
+    if (
+      mediaFile.file.size < minSizeBytes ||
+      mediaFile.file.size > maxSizeBytes
+    ) {
+      handleFileStatus(mediaFile, StatusValue.ErrorFileSize);
+      return { valid: false, status: StatusValue.ErrorFileSize, mediaFile };
+    }
+
+    if (validate) {
+      const error = validate(mediaFile);
+      if (error) {
+        logError('ERROR', error);
+        handleFileStatus(mediaFile, StatusValue.ErrorValidation);
+        return { valid: false, status: StatusValue.ErrorValidation, mediaFile };
+      }
+    }
+    return { valid: true };
+  };
+
+  const onSelectedFile = (fileWithMeta: IFileWithMeta) => {
+    updateFilesMapEntry(fileWithMeta.id, fileWithMeta);
+    onSelectedFiles(filesMap.filter(f => f.selected));
+  };
+
+  const disabledSelection = useMemo(() => {
+    console.log('FILES MAP', filesMap);
+    return filesMap.filter(f => f.selected).length === maxSelectedFiles;
+  }, [filesMap, maxSelectedFiles]);
+
   useEffect(() => {
-    const readyFiles = Object.values(filesMap).filter(
-      f => f.meta.status === StatusValue.Ready,
-    );
-    readyFiles.forEach(handleFile);
-    const { current } = dropzoneRef;
     let scrollTimeoutId: NodeJS.Timeout;
-    if (current) {
-      scrollTimeoutId = setTimeout(
-        () => current.scroll({ top: current.scrollHeight, behavior: 'smooth' }),
-        150,
-      );
+    const { current } = dropzoneRef;
+    // TODO There is room for optimization here
+    const readyFiles = filesMap.filter(f => f.status === StatusValue.Ready);
+    const validationResult = validateAllFiles(readyFiles);
+    if (validationResult.every(result => result.valid)) {
+      Promise.all(readyFiles.map(handleFile)).then(uploadedFiles => {
+        if (uploadedFiles.length > 0) {
+          onUploadedFiles(uploadedFiles);
+        }
+        if (current) {
+          scrollTimeoutId = setTimeout(
+            () =>
+              current.scroll({ top: current.scrollHeight, behavior: 'smooth' }),
+            150,
+          );
+        }
+      });
+    } else {
+      const first = validationResult.find(result => !result.valid);
+      if (first && first.status && onError) {
+        const mediaFile = first.mediaFile;
+        onError(first.status, mediaFile);
+      }
     }
     return () => clearTimeout(scrollTimeoutId);
   }, [filesMap, handleFile]);
+
+  useEffect(() => {
+    setFilesMap(files);
+  }, [files]);
 
   return (
     <DropzoneProvider>
@@ -279,7 +324,7 @@ const Dropzone = ({
         canRemove={resolveValue(canRemove, filesMap, extra)}
         canRestart={resolveValue(canRestart, filesMap, extra)}
         extra={extra}
-        files={Object.values(filesMap)}
+        files={filesMap}
         onChange={handleFiles}
         dropzoneProps={{
           onDragEnter: handleDragEnter,
@@ -287,6 +332,8 @@ const Dropzone = ({
           onDragLeave: handleDragLeave,
           onDrop: handleDrop(handleFiles),
         }}
+        onSelectedFile={onSelectedFile}
+        disabledSelection={disabledSelection}
         ref={dropzoneRef}
       />
     </DropzoneProvider>
