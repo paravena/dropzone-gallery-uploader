@@ -247,9 +247,10 @@ export class FileUploader<T> {
           reject(new Error('Upload failed'));
         }
       });
-      // formData.append('data', fileWithMeta.file);
+      formData.append('file', fileWithMeta.file);
       if (timeout) xhr.timeout = timeout;
-      xhr.send(new Blob([fileWithMeta.file], { type: fileWithMeta.file.type }));
+      // xhr.send(new Blob([fileWithMeta.file], { type: fileWithMeta.file.type }));
+      xhr.send(formData);
       fileWithMeta.xhr = xhr;
       fileUpload.onChangeStatus(StatusValue.Uploading);
     });

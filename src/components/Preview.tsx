@@ -43,7 +43,7 @@ const Preview = ({ fileWithMeta, canCancel, canRemove, canRestart }: Props) => {
   let title = `${name || '?'}, ${formatBytes(size)}`;
   if (duration) title = `${title}, ${formatDuration(duration)}`;
 
-  if (isErrorStatus(status) || !previewUrl) {
+  if (isErrorStatus(status)) {
     return null;
   }
 
