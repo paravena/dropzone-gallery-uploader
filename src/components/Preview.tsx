@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   formatBytes,
   formatDuration,
-  IFileWithMeta,
+  IMediaFile,
   isErrorStatus,
   ResolveFn,
   StatusValue,
@@ -13,15 +13,15 @@ import PreviewTopBar from './PreviewTopBar.tsx';
 import { useDropzone } from '../hooks/useDropzone.ts';
 
 type Props = {
-  fileWithMeta: IFileWithMeta;
+  mediaFile: IMediaFile;
   canCancel: boolean | ResolveFn<boolean>;
   canRemove: boolean | ResolveFn<boolean>;
   canRestart: boolean | ResolveFn<boolean>;
-  onSelected?: (file: IFileWithMeta) => void;
+  onSelected?: (file: IMediaFile) => void;
   disabled: boolean;
 };
 
-const Preview = ({ fileWithMeta, canCancel, canRemove, canRestart }: Props) => {
+const Preview = ({ mediaFile, canCancel, canRemove, canRestart }: Props) => {
   const [showTopBar, setShowTopBar] = useState(false);
   const {
     previewUrl,
@@ -31,9 +31,9 @@ const Preview = ({ fileWithMeta, canCancel, canRemove, canRestart }: Props) => {
     name,
     percent = 0,
     status,
-  } = fileWithMeta;
+  } = mediaFile;
 
-  const { size = 0, duration, type, width, height } = fileWithMeta.meta;
+  const { size = 0, duration, type, width, height } = mediaFile.meta;
 
   const { toggleSelectFile } = useDropzone();
 
@@ -60,7 +60,7 @@ const Preview = ({ fileWithMeta, canCancel, canRemove, canRestart }: Props) => {
           name="selectItem"
           type="checkbox"
           className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-          onClick={() => toggleSelectFile(fileWithMeta)}
+          onClick={() => toggleSelectFile(mediaFile)}
         />
         <button
           type="button"

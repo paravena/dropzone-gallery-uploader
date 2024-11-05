@@ -1,9 +1,9 @@
 import { createContext, ReactNode, useState } from 'react';
-import { IFileWithMeta } from '../utils';
+import { IMediaFile } from '../utils';
 
 type IDropzoneContext = {
-  selectedFiles: IFileWithMeta[];
-  toggleSelectFile: (file: IFileWithMeta) => void;
+  selectedFiles: IMediaFile[];
+  toggleSelectFile: (file: IMediaFile) => void;
 };
 
 export const DropzoneContext = createContext<IDropzoneContext>({
@@ -16,8 +16,8 @@ type Props = {
 };
 
 const DropzoneProvider = ({ children }: Props) => {
-  const [selectedFiles, setSelectedFiles] = useState<IFileWithMeta[]>([]);
-  const toggleSelectFile = (file: IFileWithMeta) => {
+  const [selectedFiles, setSelectedFiles] = useState<IMediaFile[]>([]);
+  const toggleSelectFile = (file: IMediaFile) => {
     setSelectedFiles([...selectedFiles, file]);
   };
   return (

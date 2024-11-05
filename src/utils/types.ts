@@ -27,7 +27,7 @@ export interface IMeta {
   validationError?: unknown;
 }
 
-export interface IFileWithMeta {
+export interface IMediaFile {
   id: string;
   name: string;
   file?: File;

@@ -1,6 +1,6 @@
 import React, { forwardRef, ForwardRefRenderFunction, Fragment } from 'react';
 import clsx from 'clsx';
-import { FileInputItem, IExtra, IFileWithMeta, ResolveFn } from '../utils';
+import { FileInputItem, IExtra, IMediaFile, ResolveFn } from '../utils';
 import Preview from './Preview';
 import Input from './Input';
 import { Transition } from '@headlessui/react';
@@ -9,7 +9,7 @@ import { ArrowUpTrayIcon } from '@heroicons/react/20/solid';
 type Props = {
   active: boolean;
   extra: IExtra;
-  files: IFileWithMeta[];
+  files: IMediaFile[];
   canCancel: boolean | ResolveFn<boolean>;
   canRemove: boolean | ResolveFn<boolean>;
   canRestart: boolean | ResolveFn<boolean>;
@@ -20,7 +20,7 @@ type Props = {
     onDrop(event: React.DragEvent<HTMLElement>): void;
   };
   onChange: (files: FileInputItem[]) => void;
-  onSelectedFile: (file: IFileWithMeta) => void;
+  onSelectedFile: (file: IMediaFile) => void;
   disabledSelection: boolean;
 };
 
@@ -59,7 +59,7 @@ const LayoutComponent: ForwardRefRenderFunction<HTMLDivElement, Props> = (
           return (
             <Preview
               key={f.id}
-              fileWithMeta={f}
+              mediaFile={f}
               canCancel={canCancel}
               canRemove={canRemove}
               canRestart={canRestart}

@@ -1,10 +1,5 @@
 import React from 'react';
-import {
-  HttpMethod,
-  IFileWithMeta,
-  IUploadParams,
-  StatusValue,
-} from './types.ts';
+import { HttpMethod, IMediaFile, IUploadParams, StatusValue } from './types.ts';
 import { v4 as uuid } from 'uuid';
 
 export type FileInputEvent =
@@ -91,25 +86,23 @@ export const mapFileToFileWithMeta = (file: File) => {
       size,
       type,
     },
-  } as IFileWithMeta;
+  } as IMediaFile;
 };
 
 export const mapFileInputItemToFile = (item: FileInputItem) => {
   return getFile(item);
 };
 
-export const generatePreview = async (
-  fileWithMeta: Required<IFileWithMeta>,
-) => {
+export const generatePreview = async (mediaFile: Required<IMediaFile>) => {
   const {
     meta: { type },
     file,
-  } = fileWithMeta;
+  } = mediaFile;
 
   const isImage = type.startsWith('image/');
   const isAudio = type.startsWith('audio/');
   const isVideo = type.startsWith('video/');
-  const isHeicImage = isHeicFile(fileWithMeta);
+  const isHeicImage = isHeicFile(mediaFile);
 
   if (!isImage && !isAudio && !isVideo) return;
 
@@ -146,24 +139,24 @@ export const generatePreview = async (
       const img = new Image();
       img.src = objectUrl;
       await fileCallbackToPromise(img);
-      fileWithMeta.previewUrl = objectUrl;
+      mediaFile.previewUrl = objectUrl;
     }
 
     if (isAudio) {
       const audio = new Audio();
       audio.src = objectUrl;
       await fileCallbackToPromise(audio);
-      fileWithMeta.meta.duration = audio.duration;
+      mediaFile.meta.duration = audio.duration;
     }
 
     if (isVideo) {
       const video = document.createElement('video');
       video.src = objectUrl;
       await fileCallbackToPromise(video);
-      fileWithMeta.previewUrl = objectUrl;
-      fileWithMeta.meta.duration = video.duration;
-      fileWithMeta.meta.width = video.videoWidth;
-      fileWithMeta.meta.height = video.videoHeight;
+      mediaFile.previewUrl = objectUrl;
+      mediaFile.meta.duration = video.duration;
+      mediaFile.meta.width = video.videoWidth;
+      mediaFile.meta.height = video.videoHeight;
     }
   } catch (e) {
     URL.revokeObjectURL(objectUrl);
@@ -183,7 +176,7 @@ export interface IFileUpload {
 export class FileUploader<T> {
   constructor(private params: IUploadParams) {}
 
-  upload(fileWithMeta: Required<IFileWithMeta>, fileUpload: IFileUpload) {
+  upload(mediaFile: Required<IMediaFile>, fileUpload: IFileUpload) {
     const {
       url,
       fields = {},
@@ -213,7 +206,7 @@ export class FileUploader<T> {
       }
 
       delete extraMeta.status;
-      fileWithMeta.meta = { ...fileWithMeta.meta, ...extraMeta };
+      mediaFile.meta = { ...mediaFile.meta, ...extraMeta };
 
       xhr.upload.addEventListener('progress', event => {
         fileUpload.onProgress(event);
@@ -227,7 +220,7 @@ export class FileUploader<T> {
         const isStatusError = status >= 400;
         // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/readyState
         if (!isIntermediateState) return;
-        if (xhr.status === 0 && fileWithMeta.status !== StatusValue.Aborted) {
+        if (xhr.status === 0 && mediaFile.status !== StatusValue.Aborted) {
           fileUpload.onError(ExceptionUpload);
         }
         if (xhr.status > 0 && xhr.status < 400) {
@@ -242,16 +235,16 @@ export class FileUploader<T> {
               }
             }
           }
-        } else if (isStatusError && fileWithMeta.status !== ErrorUpload) {
+        } else if (isStatusError && mediaFile.status !== ErrorUpload) {
           fileUpload.onChangeStatus(ErrorUpload);
           reject(new Error('Upload failed'));
         }
       });
-      formData.append('file', fileWithMeta.file);
+      formData.append('file', mediaFile.file);
       if (timeout) xhr.timeout = timeout;
-      // xhr.send(new Blob([fileWithMeta.file], { type: fileWithMeta.file.type }));
+      // xhr.send(new Blob([mediaFile.file], { type: mediaFile.file.type }));
       xhr.send(formData);
-      fileWithMeta.xhr = xhr;
+      mediaFile.xhr = xhr;
       fileUpload.onChangeStatus(StatusValue.Uploading);
     });
   }
