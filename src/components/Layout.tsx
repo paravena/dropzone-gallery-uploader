@@ -1,10 +1,9 @@
-import React, { forwardRef, ForwardRefRenderFunction, Fragment } from 'react';
+import React, { forwardRef, ForwardRefRenderFunction } from 'react';
 import clsx from 'clsx';
 import { FileInputItem, IExtra, IMediaFile, ResolveFn } from '../utils';
-import Preview from './Preview';
+import Preview from './preview/Preview.tsx';
 import Input from './Input';
-import { Transition } from '@headlessui/react';
-import { ArrowUpTrayIcon } from '@heroicons/react/20/solid';
+import DropzoneOverlay from './DropzoneOverlay.tsx';
 
 type Props = {
   active: boolean;
@@ -44,7 +43,7 @@ const LayoutComponent: ForwardRefRenderFunction<HTMLDivElement, Props> = (
   });
 
   return (
-    <div
+    <section
       className={clsx(
         'relative h-full w-full overflow-hidden bg-gray-200 p-3',
         {
@@ -70,24 +69,9 @@ const LayoutComponent: ForwardRefRenderFunction<HTMLDivElement, Props> = (
             />
           );
         })}
-        <Transition
-          show={files.length > 0 && active}
-          as={Fragment}
-          enter="transform ease-out duration-300 transition"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="transition ease-in duration-100"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="absolute left-2/4 top-2/4 z-10 flex -translate-x-1/2 -translate-y-1/2 transform flex-col items-center justify-center rounded-md border-2 border-solid border-blue-400 bg-gray-300 px-10 py-8 text-sm">
-            <ArrowUpTrayIcon className="h-8 w-8" />
-            <p>Drop files to upload</p>
-            <p>JPEG, PNG, HEIF, WEBP, AVIF, or SVG files</p>
-          </div>
-        </Transition>
+        <DropzoneOverlay show={files.length > 0 && active} />
       </div>
-    </div>
+    </section>
   );
 };
 

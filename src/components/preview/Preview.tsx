@@ -6,11 +6,11 @@ import {
   isErrorStatus,
   ResolveFn,
   StatusValue,
-} from '../utils';
+} from '../../utils';
 import ProgressBar from './ProgressBar.tsx';
-import { TrashIcon } from '@heroicons/react/20/solid';
+import { TrashIcon, DocumentIcon } from '@heroicons/react/20/solid';
 import PreviewTopBar from './PreviewTopBar.tsx';
-import { useDropzone } from '../hooks/useDropzone.ts';
+import { useDropzone } from '../../hooks/useDropzone.ts';
 
 type Props = {
   mediaFile: IMediaFile;
@@ -50,7 +50,7 @@ const Preview = ({ mediaFile, canCancel, canRemove, canRestart }: Props) => {
   if (status === StatusValue.Aborted) title = `${title} (cancelled)`;
 
   return (
-    <div
+    <section
       className="relative h-56 w-64"
       onMouseEnter={() => setShowTopBar(true)}
       onMouseLeave={() => setShowTopBar(false)}
@@ -92,7 +92,12 @@ const Preview = ({ mediaFile, canCancel, canRemove, canRestart }: Props) => {
         </video>
       )}
       {!previewUrl && !isVideo && (
-        <span className="text-sm text-gray-600">{title}</span>
+        <div className="flex h-full w-full items-center justify-center rounded-lg bg-amber-200 p-3">
+          <div className="flex flex-col items-center gap-3">
+            <DocumentIcon className="h-16 w-16 text-emerald-500" />
+            <div className="text-sm text-gray-600">{title}</div>
+          </div>
+        </div>
       )}
       <ProgressBar
         percent={percent}
@@ -104,7 +109,7 @@ const Preview = ({ mediaFile, canCancel, canRemove, canRestart }: Props) => {
         remove={remove}
         restart={restart}
       />
-    </div>
+    </section>
   );
 };
 

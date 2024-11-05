@@ -1,4 +1,4 @@
-import { ResolveFn, StatusValue } from '../utils';
+import { ResolveFn, StatusValue } from '../../utils';
 
 import { Transition } from '@headlessui/react';
 import { Fragment, useEffect, useState } from 'react';
